@@ -9,6 +9,7 @@ email: roma.vinn@gmail.com
 """
 from Lab2_AES128.GF import GF
 from copy import deepcopy
+from random import getrandbits
 
 # ======================= Helper functions ======================= #
 
@@ -53,10 +54,35 @@ def vector_xor(a, b):
 
     return res
 
+
+def split_message(message: bytes):
+    blocks_count = len(message) // 16
+    for block_num in range(blocks_count):
+        tmp = message[16*block_num:16*(block_num + 1)]
+        m = bytes_to_matrix(tmp)
+        yield m
+
+
+def bytes_to_matrix(b):
+    return [[b[4*i + j] for j in range(4)] for i in range(4)]
+
+
+def matrix_to_bytes(m):
+    res = b''
+    for i in range(len(m)):
+        for j in range(len(m[0])):
+            hex_num = hex(m[i][j])[2:].rjust(2, '0')
+            res += bytes.fromhex(hex_num)
+    return res
+
 # ======================= End of helper functions ======================= #
 
 
 class AES128:
+    # modes
+    CBC = 0
+    CTR = 1
+
     # TODO: generate by myself
     # sbox table for subBytes
     sbox = [
@@ -135,9 +161,10 @@ class AES128:
         0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb
     ]
 
-    def __init__(self, key):
+    def __init__(self, key, mode=CBC):
         self._state = [[0 for _ in range(4)] for _ in range(4)]
         self._round_keys = [[0 for _ in range(44)] for _ in range(4)]
+        self._mode = mode
 
         if type(key) == bytes and len(key) == 16:
             self._key = AES128.prepare_text(deepcopy(key))
@@ -148,7 +175,10 @@ class AES128:
 
         self.key_schedule()
 
-    def encrypt(self, plain_text):
+    def _encrypt(self, plain_text):
+        """
+        encrypt one block
+        """
         # copying input data to the initial state
         if type(plain_text) == bytes and len(plain_text) == 16:
             self._state = AES128.prepare_text(deepcopy(plain_text))
@@ -172,9 +202,33 @@ class AES128:
         self.shift_rows()
         self.add_round_key(self.sub_key(10))
 
-        return self._state
+        return matrix_to_bytes(self._state)
 
-    def decrypt(self, cipher_text):
+    def encrypt(self, plain_text, iv=None):
+        assert type(plain_text) != bytes or len(plain_text) % 16 == 0,\
+            f'Incorrect plain text length (not divisible by 16): {len(plain_text)}.'
+        if self._mode == AES128.CBC:
+            if iv is None:
+                iv = [[getrandbits(8) for _ in range(4)] for _ in range(4)]
+            c = deepcopy(iv)
+            res = matrix_to_bytes(deepcopy(iv))
+            for block in split_message(plain_text):
+                for i in range(4):
+                    for j in range(4):
+                        block[i][j] ^= c[i][j]
+                enc = self._encrypt(block)
+                c = enc
+                res += enc
+            return res
+        elif self._mode == AES128.CTR:
+            raise NotImplemented()  # TODO
+        else:
+            raise AssertionError(f'Incorrect mode: must be CBC or CTR, got {self._mode}.')
+
+    def _decrypt(self, cipher_text):
+        """
+        decrypt one block
+        """
         # copying input data to the initial state
         if type(cipher_text) == bytes and len(cipher_text) == 16:
             self._state = AES128.prepare_text(deepcopy(cipher_text))
@@ -198,7 +252,26 @@ class AES128:
         self.sub_bytes(inverse=True)
         self.add_round_key(self._key)
 
-        return self._state
+        return matrix_to_bytes(self._state)
+
+    def decrypt(self, crypto_text: bytes):
+        assert len(crypto_text) % 16 == 0,\
+            f'Incorrect crypto text length (not divisible by 16): {len(crypto_text)}.'
+        if self._mode == AES128.CBC:
+            c = bytes_to_matrix(crypto_text[:16])
+            res = b''
+            for block in split_message(crypto_text[16:]):
+                dec_block = bytes_to_matrix(self._decrypt(block))
+                for i in range(4):
+                    for j in range(4):
+                        dec_block[i][j] ^= c[i][j]
+                c = dec_block
+                res += matrix_to_bytes(dec_block)
+            return res
+        elif self._mode == AES128.CTR:
+            raise NotImplemented()  # TODO
+        else:
+            raise AssertionError(f'Incorrect mode: must be CBC or CTR, got {self._mode}.')
 
     def add_round_key(self, key_matrix):
         """
@@ -308,43 +381,33 @@ class AES128:
         arr = [[0 for _ in range(4)] for _ in range(4)]
         for i in range(4):
             for j in range(4):
-                arr[i][j] = int(text[4*i + j].hex(), 16)
+                arr[i][j] = text[4*i + j]
         return arr
 
 
 if __name__ == '__main__':
     # testing
-    pt = [
-        [0x32, 0x88, 0x31, 0xe0],
-        [0x43, 0x5a, 0x31, 0x37],
-        [0xf6, 0x30, 0x98, 0x07],
-        [0xa8, 0x8d, 0xa2, 0x34]
-    ]
-
-    k = [
-        [0x2b, 0x28, 0xab, 0x09],
-        [0x7e, 0xae, 0xf7, 0xcf],
-        [0x15, 0xd2, 0x15, 0x4f],
-        [0x16, 0xa6, 0x88, 0x3c]
-    ]
+    pt = b'\x32\x88\x31\xe0\x43\x5a\x31\x37\xf6\x30\x98\x07\xa8\x8d\xa2\x34'
+    k = b'\x2b\x28\xab\x09\x7e\xae\xf7\xcf\x15\xd2\x15\x4f\x16\xa6\x88\x3c'
 
     aes = AES128(key=k)
     ct = aes.encrypt(pt)
-    dt = aes.decrypt(ct)
+    # dt = aes.decrypt(ct)
 
     print("plain text:".ljust(15, ' '), pt)
     print("crypto text:".ljust(15, ' '), ct)
-    print("decoded text:".ljust(15, ' '), dt)
+    # print("decoded text:".ljust(15, ' '), dt)
 
     print('\nHow changes crypto text if we change 1 bit in plain text?')
     # changed 1-st byte: 0x32 [100000] -> 0x33 [100001]
-    pt_changed = [
-        [0x33, 0x88, 0x31, 0xe0],
-        [0x43, 0x5a, 0x31, 0x37],
-        [0xf6, 0x30, 0x98, 0x07],
-        [0xa8, 0x8d, 0xa2, 0x34]
-    ]
+    pt_changed = b'\x33\x88\x31\xe0\x43\x5a\x31\x37\xf6\x30\x98\x07\xa8\x8d\xa2\x34'
 
     new_ct = aes.encrypt(pt_changed)
     print("old crypto text:".ljust(15, ' '), ct)
     print("new crypto text:".ljust(15, ' '), new_ct)
+
+    msg = b'hello, the world'
+    enc_msg = aes.encrypt(msg)
+    print("message:".ljust(15, ' '), msg)
+    print("crypto text:".ljust(15, ' '), enc_msg)
+    print("decrypted:".ljust(15, ' '), aes.decrypt(enc_msg))
