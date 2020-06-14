@@ -53,6 +53,8 @@ def vector_xor(a, b):
 
     return res
 
+# ======================= End of helper functions ======================= #
+
 
 class AES128:
     # TODO: generate by myself
@@ -134,8 +136,8 @@ class AES128:
     ]
 
     def __init__(self, key):
-        self._state = [[0] * 4] * 4
-        self._round_keys = [[0] * 44] * 4
+        self._state = [[0 for _ in range(4)] for _ in range(4)]
+        self._round_keys = [[0 for _ in range(44)] for _ in range(4)]
         self._key = deepcopy(key)
         self.key_schedule()
 
@@ -273,6 +275,11 @@ class AES128:
                                                           get_col(self._round_keys, 4*i + 6)))
 
     def sub_key(self, key_num):
+        """
+        Get key_num-th round key
+        :param key_num: number of round key
+        :return: round key as 4x4 matrix
+        """
         cur_key = deepcopy(self._key)
         for i in range(4):
             for j in range(4):
