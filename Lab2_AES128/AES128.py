@@ -138,12 +138,24 @@ class AES128:
     def __init__(self, key):
         self._state = [[0 for _ in range(4)] for _ in range(4)]
         self._round_keys = [[0 for _ in range(44)] for _ in range(4)]
-        self._key = deepcopy(key)
+
+        if type(key) == bytes and len(key) == 16:
+            self._key = AES128.prepare_text(deepcopy(key))
+        elif type(key) == list and len(key) == 4 and len(key[0]) == 4:
+            self._key = deepcopy(key)
+        else:
+            raise NotImplemented(f"Encryption is not working for such input: {key}")
+
         self.key_schedule()
 
     def encrypt(self, plain_text):
         # copying input data to the initial state
-        self._state = deepcopy(plain_text)
+        if type(plain_text) == bytes and len(plain_text) == 16:
+            self._state = AES128.prepare_text(deepcopy(plain_text))
+        elif type(plain_text) == list and len(plain_text) == 4 and len(plain_text[0]) == 4:
+            self._state = deepcopy(plain_text)
+        else:
+            raise NotImplemented(f"Encryption is not working for such input: {plain_text}")
 
         # initial round
         self.add_round_key(self._key)
@@ -164,7 +176,12 @@ class AES128:
 
     def decrypt(self, cipher_text):
         # copying input data to the initial state
-        self._state = deepcopy(cipher_text)
+        if type(cipher_text) == bytes and len(cipher_text) == 16:
+            self._state = AES128.prepare_text(deepcopy(cipher_text))
+        elif type(cipher_text) == list and len(cipher_text) == 4 and len(cipher_text[0]) == 4:
+            self._state = deepcopy(cipher_text)
+        else:
+            raise NotImplemented(f"Encryption is not working for such input: {cipher_text}")
 
         # initial round
         self.add_round_key(self.sub_key(10))
@@ -285,6 +302,14 @@ class AES128:
             for j in range(4):
                 cur_key[i][j] = self._round_keys[i][4*key_num + j]
         return cur_key
+
+    @staticmethod
+    def prepare_text(text):
+        arr = [[0 for _ in range(4)] for _ in range(4)]
+        for i in range(4):
+            for j in range(4):
+                arr[i][j] = int(text[4*i + j].hex(), 16)
+        return arr
 
 
 if __name__ == '__main__':
