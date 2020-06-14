@@ -303,3 +303,16 @@ if __name__ == '__main__':
     print("plain text:".ljust(15, ' '), pt)
     print("crypto text:".ljust(15, ' '), ct)
     print("decoded text:".ljust(15, ' '), dt)
+
+    print('\nHow changes crypto text if we change 1 bit in plain text?')
+    # changed 1-st byte: 0x32 [100000] -> 0x33 [100001]
+    pt_changed = [
+        [0x33, 0x88, 0x31, 0xe0],
+        [0x43, 0x5a, 0x31, 0x37],
+        [0xf6, 0x30, 0x98, 0x07],
+        [0xa8, 0x8d, 0xa2, 0x34]
+    ]
+
+    new_ct = aes.encrypt(pt_changed)
+    print("old crypto text:".ljust(15, ' '), ct)
+    print("new crypto text:".ljust(15, ' '), new_ct)
