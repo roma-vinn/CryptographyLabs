@@ -101,9 +101,9 @@ def split_message(message: bytes):
     return [words[16*i: 16*(i + 1)] for i in range(len(message) // 64)]
 
 
-def sha256(message):
+def sha256(message) -> bytes:
     if type(message) != bytes:
-        message = str(message).encode()
+        message = str(message).encode(encoding='utf-8')
 
     M = split_message(padding(message))
 
