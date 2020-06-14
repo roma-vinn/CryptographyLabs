@@ -221,7 +221,19 @@ class AES128:
                 res += enc
             return res
         elif self._mode == AES128.CTR:
-            raise NotImplemented()  # TODO
+            ctr = bytes.fromhex(hex(getrandbits(128))[2:].rjust(32, '0'))
+            res = self._encrypt(ctr)  # add encrypted initial ctr value to the beginning of result
+
+            for block in split_message(plain_text):
+                enc_ctr = bytes_to_matrix(self._encrypt(ctr))
+                for i in range(4):
+                    for j in range(4):
+                        block[i][j] ^= enc_ctr[i][j]
+                res += matrix_to_bytes(block)
+                ctr = (int(ctr.hex(), 16) + 1) % (1 << 128)  # increment ctr
+                ctr = bytes.fromhex(hex(ctr)[2:].rjust(32, '0'))
+
+            return res
         else:
             raise AssertionError(f'Incorrect mode: must be CBC or CTR, got {self._mode}.')
 
@@ -269,7 +281,18 @@ class AES128:
                 res += matrix_to_bytes(dec_block)
             return res
         elif self._mode == AES128.CTR:
-            raise NotImplemented()  # TODO
+            ctr = self._decrypt(crypto_text[:16])  # get initial ctr value from the beginning of the message
+            res = b''
+            for block in split_message(crypto_text[16:]):
+                enc_ctr = bytes_to_matrix(self._encrypt(ctr))
+                for i in range(4):
+                    for j in range(4):
+                        block[i][j] ^= enc_ctr[i][j]
+                res += matrix_to_bytes(block)
+                ctr = (int(ctr.hex(), 16) + 1) % (1 << 128)  # increment ctr
+                ctr = bytes.fromhex(hex(ctr)[2:].rjust(32, '0'))
+
+            return res
         else:
             raise AssertionError(f'Incorrect mode: must be CBC or CTR, got {self._mode}.')
 
@@ -390,7 +413,7 @@ if __name__ == '__main__':
     pt = b'\x32\x88\x31\xe0\x43\x5a\x31\x37\xf6\x30\x98\x07\xa8\x8d\xa2\x34'
     k = b'\x2b\x28\xab\x09\x7e\xae\xf7\xcf\x15\xd2\x15\x4f\x16\xa6\x88\x3c'
 
-    aes = AES128(key=k)
+    aes = AES128(key=k, mode=AES128.CTR)
     ct = aes.encrypt(pt)
     # dt = aes.decrypt(ct)
 
