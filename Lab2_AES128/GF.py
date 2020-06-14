@@ -40,32 +40,21 @@ class GF:
 
     def __pow__(self, power):
         power %= 255  # since x^-1 == x^255
-        if self.int_value == 0 or self.int_value == 1 or power == 1:
-            return self
-
-        # if self.int_value == -1:
-        #     if power % 2 == 0:
-        #         return 1
-        #     else:
-        #         return -1
-
-        if power == 0:
-            return GF(1)
-
-        val = self ** (power // 2)
-        if power % 2 == 0:
-            return GF(val * val)
-        return GF(val * val * power)
+        res = GF(1)
+        for i in range(power):
+            res *= self
+        return res
 
     def str(self):
         return f'GF({self._int_value})'
 
     def __repr__(self):
-        return str(self)
+        return f'GF({self._int_value})'
 
 
 if __name__ == '__main__':
     a = GF(5)
     b = GF(17)
     print(a + b)
-    pass
+    print(a ** b.int_value)
+    print(a ** -1)
