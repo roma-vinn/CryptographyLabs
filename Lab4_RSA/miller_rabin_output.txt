@@ -1,0 +1,4 @@
+10 is composite with witness for the compositeness = 5
+11 is probably prime
+4681 is composite with witness for the compositeness = 1173
+543496886068436072938449192257 is probably prime

@@ -1,0 +1,3 @@
+For key: b'thisiskey' and message: b'thisismessage'
+My hmac implementation:        e839c44432e71f87f1bbdcb736a0049f2b4d3d8eac5b5ef21d0051479885c82b
+Standard implementation:       e839c44432e71f87f1bbdcb736a0049f2b4d3d8eac5b5ef21d0051479885c82b
