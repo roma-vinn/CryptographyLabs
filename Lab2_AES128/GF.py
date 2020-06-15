@@ -7,6 +7,8 @@ Created by Roman Polishchenko at 14.06.2020
 Taras Shevchenko National University of Kyiv
 email: roma.vinn@gmail.com
 """
+import os
+import sys
 
 
 class GF:
@@ -53,6 +55,8 @@ class GF:
 
 
 if __name__ == '__main__':
+    sys.stdout = open(os.path.basename(__file__)[:-3] + '_output.txt', "w")
+
     a = GF(5)
     b = GF(17)
     print(a + b)

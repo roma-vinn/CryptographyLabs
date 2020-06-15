@@ -8,6 +8,8 @@ Taras Shevchenko National University of Kyiv
 email: roma.vinn@gmail.com
 """
 from random import randint
+import os
+import sys
 
 
 def _pick_a(n, picked):
@@ -57,6 +59,7 @@ def test(n):
 
 
 if __name__ == '__main__':
+    sys.stdout = open(os.path.basename(__file__)[:-3] + '_output.txt', "w")
     # some tests
     test(10)  # composite
     test(11)  # prime

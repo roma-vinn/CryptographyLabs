@@ -10,6 +10,8 @@ email: roma.vinn@gmail.com
 from Lab3_SHA256.sha256 import sha256
 import hmac as standard_hmac
 import hashlib
+import os
+import sys
 
 
 def hmac(key: bytes, message: bytes) -> bytes:
@@ -36,6 +38,7 @@ def test(key: bytes, message: bytes):
 
 
 if __name__ == '__main__':
+    sys.stdout = open(os.path.basename(__file__)[:-3] + '_output.txt', "w")
     test_key = b'thisiskey'
     test_message = b'thisismessage'
     test(test_key, test_message)

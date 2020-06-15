@@ -8,7 +8,9 @@ Taras Shevchenko National University of Kyiv
 email: roma.vinn@gmail.com
 """
 from Lab4_RSA.miller_rabin import miller_rabin
-from random import randint
+from random import getrandbits, randint
+import os
+import sys
 
 
 FIRST_PRIMES = (
@@ -29,14 +31,11 @@ def is_prime(n, k=12):
         if n % num == 0:
             return n == num
     mil_res = miller_rabin(n, k=k)
-    if mil_res[0] is True:
-        return True
-    else:
-        return False
+    return mil_res[0]
 
 
 def random_prime(bit_size):
-    x = randint(1 << bit_size - 1, 1 << bit_size)
+    x = getrandbits(bit_size-1) + (1 << (bit_size - 1))
     # if last bit == 0 -> x is even
     if x & 1 == 0:
         x += 1
@@ -64,7 +63,18 @@ def mod_inv(a, b):
     return x % b
 
 
+def str_to_bin(string):
+    bits = bin(int.from_bytes(string.encode(), 'big'))[2:]
+    return bits.zfill(8 * ((len(bits) + 7) // 8))
+
+
+def bin_to_str(binary):
+    n = int(binary, 2)
+    return n.to_bytes((n.bit_length() + 7) // 8, 'big').decode() or '\0'
+
+
 if __name__ == '__main__':
+    sys.stdout = open(os.path.basename(__file__)[:-3] + '_output.txt', "w")
     # some tests
 
     # random_prime / is prime

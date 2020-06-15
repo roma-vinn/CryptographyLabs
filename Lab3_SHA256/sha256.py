@@ -8,6 +8,8 @@ Taras Shevchenko National University of Kyiv
 email: roma.vinn@gmail.com
 """
 from hashlib import sha256 as hashlib_sha256
+import os
+import sys
 
 
 WORD_LEN = 32
@@ -144,7 +146,11 @@ def sha256(message) -> bytes:
 
     # After repeating steps one through four a total of N times (i.e., after processing M(N)),
     # the resulting 256-bit = 32-byte message digest of the message, M, is
-    return b''.join(list(map(lambda x: bytes.fromhex(hex(x)[2:]), H)))
+    res = b''
+    for h in H:
+        hex_h = hex(h)[2:]
+        res += bytes.fromhex(hex_h.rjust(8, '0'))
+    return res
 
 
 def test(message: str):
@@ -156,6 +162,7 @@ def test(message: str):
 
 
 if __name__ == '__main__':
+    sys.stdout = open(os.path.basename(__file__)[:-3] + '_output.txt', "w")
     # some tests
     msg = 'hello world'
     msg1 = 'hello world!'

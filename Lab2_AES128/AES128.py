@@ -10,6 +10,9 @@ email: roma.vinn@gmail.com
 from Lab2_AES128.GF import GF
 from copy import deepcopy
 from random import getrandbits
+from Lab3_SHA256.sha256 import sha256
+import os
+import sys
 
 # ======================= Helper functions ======================= #
 
@@ -161,12 +164,14 @@ class AES128:
         0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb
     ]
 
-    def __init__(self, key, mode=CBC):
+    def __init__(self, key=None, mode=CBC):
         self._state = [[0 for _ in range(4)] for _ in range(4)]
         self._round_keys = [[0 for _ in range(44)] for _ in range(4)]
         self._mode = mode
-
-        if type(key) == bytes and len(key) == 16:
+        if key is None:
+            # generate key using sha256
+            self._generate_key()
+        elif type(key) == bytes and len(key) == 16:
             self._key = AES128.prepare_text(deepcopy(key))
         elif type(key) == list and len(key) == 4 and len(key[0]) == 4:
             self._key = deepcopy(key)
@@ -174,6 +179,13 @@ class AES128:
             raise NotImplemented(f"Encryption is not working for such input: {key}")
 
         self.key_schedule()
+
+    def _generate_key(self):
+        from time import time
+        tmp = sha256(str(time()))
+        key = int(tmp[:128].hex()[2:].rjust(16, '0'), 16) ^ int(tmp[128:].hex()[2:].rjust(16, '0'), 16)
+        key = bytes.fromhex(hex(key)[2:].rjust(32, '0'))
+        self._key = AES128.prepare_text(key)
 
     def _encrypt(self, plain_text):
         """
@@ -409,17 +421,18 @@ class AES128:
 
 
 if __name__ == '__main__':
+    sys.stdout = open(os.path.basename(__file__)[:-3] + '_output.txt', "w")
     # testing
     pt = b'\x32\x88\x31\xe0\x43\x5a\x31\x37\xf6\x30\x98\x07\xa8\x8d\xa2\x34'
     k = b'\x2b\x28\xab\x09\x7e\xae\xf7\xcf\x15\xd2\x15\x4f\x16\xa6\x88\x3c'
 
-    aes = AES128(key=k, mode=AES128.CTR)
+    aes = AES128(mode=AES128.CTR)
     ct = aes.encrypt(pt)
-    # dt = aes.decrypt(ct)
+    dt = aes.decrypt(ct)
 
     print("plain text:".ljust(15, ' '), pt)
     print("crypto text:".ljust(15, ' '), ct)
-    # print("decoded text:".ljust(15, ' '), dt)
+    print("decoded text:".ljust(15, ' '), dt)
 
     print('\nHow changes crypto text if we change 1 bit in plain text?')
     # changed 1-st byte: 0x32 [100000] -> 0x33 [100001]
